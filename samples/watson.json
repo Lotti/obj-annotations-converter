@@ -1,0 +1,35 @@
+{
+  "updated": "2019-07-22T12:46:00.047Z",
+  "dimensions": {
+    "width": 533,
+    "height": 400
+  },
+  "source": {
+    "type": "file",
+    "filename": "Broken_003_34541_2c972bde621fad1dac4f9f9eecc12291.jpg"
+  },
+  "created": "2019-07-22T12:46:00.047Z",
+  "image_id": "Broken_003_34541_2c972bde621fad_2c972bde621fad1dac4f9f9eecc12291",
+  "training_data": {
+    "objects": [
+      {
+        "object": "bumper",
+        "location": {
+          "width": 121,
+          "top": 164,
+          "height": 158,
+          "left": 232
+        }
+      },
+      {
+        "object": "bumper",
+        "location": {
+          "width": 148,
+          "top": 157,
+          "height": 157,
+          "left": 80
+        }
+      }
+    ]
+  }
+}

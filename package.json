@@ -1,0 +1,30 @@
+{
+  "name": "object-detection-training-converter",
+  "version": "1.0.0",
+  "description": "command line scripts to convert annotation between Watson Visual Recognition and Pascal VOC XML format",
+  "scripts": {
+    "lint": "eslint --fix ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.ibm.com/valerio-riva/object-detection-training-converter.git"
+  },
+  "author": "Valerio Riva <valerio.riva@it.ibm.com>",
+  "license": "MIT",
+  "bin": {
+    "obj-annotation-converter": "./cli/converter.js"
+  },
+  "dependencies": {
+    "chalk": "^2.4.2",
+    "commander": "^2.20.0",
+    "dotenv": "^8.0.0",
+    "fast-glob": "^3.0.4",
+    "fast-xml-parser": "^3.12.19",
+    "fs-extra": "^8.1.0",
+    "log4js": "^4.5.1",
+    "xmlbuilder": "^13.0.2"
+  },
+  "devDependencies": {
+    "eslint": "^6.1.0"
+  }
+}
