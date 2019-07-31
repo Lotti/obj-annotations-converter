@@ -3,11 +3,11 @@
 require(`dotenv`).config();
 const path = require(`path`);
 const program = require(`commander`);
-const chalk = require('chalk');
+const chalk = require(`chalk`);
 const fg = require(`fast-glob`);
 const fs = require(`fs-extra`);
 const xmlbuilder = require(`xmlbuilder`);
-const xmlParser = require('fast-xml-parser');
+const xmlParser = require(`fast-xml-parser`);
 
 program
     .version(`0.1`)
@@ -29,7 +29,9 @@ if (program.source) {
 }
 
 let target = process.cwd();
-if (program.target) {
+if (!program.target && program.source) {
+    target = path.resolve(program.source);
+} else if (program.target) {
     target = path.resolve(program.target);
 }
 
@@ -119,71 +121,78 @@ if (program.from === `watson` && program.to === `voc`) {
             if (err) {
                 console.error(chalk.red(`Can't access file ${entry}. Skipping it.`));
             } else {
+                try {
+                    // parsing xml file
+                    var options = {
+                        attributeNamePrefix: `@_`,
+                        attrNodeName: `attr`, //default is 'false'
+                        textNodeName: `#text`,
+                        ignoreAttributes: true,
+                        ignoreNameSpace: false,
+                        allowBooleanAttributes: false,
+                        parseNodeValue: true,
+                        parseAttributeValue: false,
+                        trimValues: true,
+                        cdataTagName: `__cdata`, //default is 'false'
+                        cdataPositionChar: `\\c`,
+                        localeRange: ``, //To support non english character in tag/attribute values.
+                        parseTrueNumberOnly: false,
+                    };
 
-                // parsing xml file
-                var options = {
-                    attributeNamePrefix: "@_",
-                    attrNodeName: "attr", //default is 'false'
-                    textNodeName: "#text",
-                    ignoreAttributes: true,
-                    ignoreNameSpace: false,
-                    allowBooleanAttributes: false,
-                    parseNodeValue: true,
-                    parseAttributeValue: false,
-                    trimValues: true,
-                    cdataTagName: "__cdata", //default is 'false'
-                    cdataPositionChar: "\\c",
-                    localeRange: "", //To support non english character in tag/attribute values.
-                    parseTrueNumberOnly: false,
-                };
+                    if (xmlParser.validate(xmlData) !== true) {
+                        console.error(chalk.red(`Can't parse file ${entry}. Skipping it.`));
+                        return;
+                    }
+                    const jsonObj = xmlParser.convertToJson(xmlParser.getTraversalObj(xmlData, options), options);
 
-                if (xmlParser.validate(xmlData) !== true) {
-                    console.error(chalk.red(`Can't parse file ${entry}. Skipping it.`));
-                    return;
+                    // creating json from xml data
+                    if (jsonObj.annotation.object) {
+                        jsonObj.annotation.object = Array.isArray(jsonObj.annotation.object) ? jsonObj.annotation.object : [jsonObj.annotation.object];
+                    }
+
+                    const json = {
+                        updated: new Date().toISOString(),
+                        dimensions: {
+                            width: jsonObj.annotation.size.width,
+                            height: jsonObj.annotation.size.height
+                        },
+                        source: {
+                            type: `file`,
+                            filename: jsonObj.annotation.filename
+                        },
+                        created: new Date().toISOString(),
+                        image_id: jsonObj.annotation.source.database,
+                        training_data: {
+                            objects: jsonObj.annotation.object && jsonObj.annotation.object.map((o) => {
+                                return {
+                                    object: o.name,
+                                    location: {
+                                        width: o.bndbox.ymax - o.bndbox.ymin,
+                                        top: o.bndbox.ymin,
+                                        height: o.bndbox.xmax - o.bndbox.xmin,
+                                        left: o.bndbox.xmin
+                                    }
+                                };
+                            })
+                        }
+                    };
+
+                    // writing json
+                    const fileName = `${path.basename(entry, `.xml`)}.json`;
+                    const fileDst = path.join(target, fileName);
+                    const jsonString = JSON.stringify(json, null, 4);
+                    fs.writeFile(fileDst, jsonString, {encoding: `utf8`}, (err) => {
+                        if (err) {
+                            console.error(chalk.red(`Can't write file ${fileDst}. Skipping it.`));
+                        } else {
+                            i++;
+                            console.log(`${fileDst} generated`);
+                        }
+                    });
+                } catch (error) {
+                    console.error(error);
+                    console.error(chalk.red(`Can't convert file ${entry}. Skipping it.`));
                 }
-                const jsonObj = xmlParser.convertToJson(xmlParser.getTraversalObj(xmlData, options), options);
-
-                // creating json from xml data
-                jsonObj.annotation.object = Array.isArray(jsonObj.annotation.object) ? jsonObj.annotation.object : [jsonObj.annotation.object];
-                const json = {
-                    "updated": new Date().toISOString(),
-                    "dimensions": {
-                        "width": jsonObj.annotation.size.width,
-                        "height": jsonObj.annotation.size.height
-                    },
-                    "source": {
-                        "type": "file",
-                        "filename": jsonObj.annotation.filename
-                    },
-                    "created": new Date().toISOString(),
-                    "image_id": jsonObj.annotation.source.database,
-                    "training_data": {
-                        "objects": jsonObj.annotation.object.map((o) => {
-                            return {
-                                object: o.name,
-                                location: {
-                                    width: o.bndbox.ymax - o.bndbox.ymin,
-                                    top: o.bndbox.ymin,
-                                    height: o.bndbox.xmax - o.bndbox.xmin,
-                                    left: o.bndbox.xmin
-                                }
-                            };
-                        })
-                    }
-                };
-
-                // writing json
-                const fileName = `${path.basename(entry, `.xml`)}.json`;
-                const fileDst = path.join(target, fileName);
-                const jsonString = JSON.stringify(json, null, 4);
-                fs.writeFile(fileDst, jsonString, {encoding: `utf8`}, (err) => {
-                    if (err) {
-                        console.error(chalk.red(`Can't write file ${fileDst}. Skipping it.`));
-                    } else {
-                        i++;
-                        console.log(`${fileDst} generated`);
-                    }
-                });
             }
         });
     }
