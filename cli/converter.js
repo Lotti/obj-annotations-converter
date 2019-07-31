@@ -67,6 +67,7 @@ if (program.from === `watson` && program.to === `voc`) {
                 try {
                     const json = JSON.parse(data);
 
+                    // creating xml file from json data
                     const xml = xmlbuilder.create(`annotation`);
                     xml.ele(`folder`, {}, `Unspecified`);
                     xml.ele(`filename`, {}, json.source.filename);
@@ -91,6 +92,7 @@ if (program.from === `watson` && program.to === `voc`) {
                         bndbox.ele(`ymax`, {}, o.location.top + o.location.height);
                     }
 
+                    // writing xml file
                     const fileName = `${path.basename(entry, `.json`)}.xml`;
                     const fileDst = path.join(target, fileName);
                     const xmlString = xml.end({pretty: true});
@@ -117,6 +119,8 @@ if (program.from === `watson` && program.to === `voc`) {
             if (err) {
                 console.error(chalk.red(`Can't access file ${entry}. Skipping it.`));
             } else {
+
+                // parsing xml file
                 var options = {
                     attributeNamePrefix: "@_",
                     attrNodeName: "attr", //default is 'false'
@@ -138,6 +142,8 @@ if (program.from === `watson` && program.to === `voc`) {
                     return;
                 }
                 const jsonObj = xmlParser.convertToJson(xmlParser.getTraversalObj(xmlData, options), options);
+
+                // creating json from xml data
                 jsonObj.annotation.object = Array.isArray(jsonObj.annotation.object) ? jsonObj.annotation.object : [jsonObj.annotation.object];
                 const json = {
                     "updated": new Date().toISOString(),
@@ -166,6 +172,7 @@ if (program.from === `watson` && program.to === `voc`) {
                     }
                 };
 
+                // writing json
                 const fileName = `${path.basename(entry, `.xml`)}.json`;
                 const fileDst = path.join(target, fileName);
                 const jsonString = JSON.stringify(json, null, 4);
