@@ -21,7 +21,6 @@
     "fast-glob": "^3.0.4",
     "fast-xml-parser": "^3.12.19",
     "fs-extra": "^8.1.0",
-    "log4js": "^4.5.1",
     "xmlbuilder": "^13.0.2"
   },
   "devDependencies": {
