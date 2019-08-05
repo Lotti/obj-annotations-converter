@@ -11,7 +11,7 @@ const xmlParser = require(`fast-xml-parser`);
 
 program
     .version(`0.1`)
-    .usage(`--path . --target ./annotations --from watson --to voc`)
+    .usage(` --from watson --to voc --source . --target ./annotations`)
     .option(`--from <type>`, `Set annotation origin format [watson, voc]`, /^(watson|voc)$/i, `watson`)
     .option(`--to <type>`, `Set annotation destination format [watson, voc]`, /^(watson|voc)$/i, `voc`)
     .option(`--source <src>`, `origin directory`)
