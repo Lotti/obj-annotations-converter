@@ -113,7 +113,7 @@ if (program.from === `watson` && program.to === `voc`) {
         });
     }
 } else if (program.from === `voc` && program.to === `watson`) {
-    const entries = fg.sync(path.join(program.source, `*.xml`), options);
+    const entries = fg.sync(path.join(program.source, `*`), options);
     console.log(chalk.green(`Found ${entries.length} entries.`));
     let i = 0;
     for (const entry of entries) {
@@ -167,9 +167,9 @@ if (program.from === `watson` && program.to === `voc`) {
                                 return {
                                     object: o.name,
                                     location: {
-                                        width: o.bndbox.ymax - o.bndbox.ymin,
+                                        width: o.bndbox.xmax - o.bndbox.xmin,
                                         top: o.bndbox.ymin,
-                                        height: o.bndbox.xmax - o.bndbox.xmin,
+                                        height: o.bndbox.ymax - o.bndbox.ymin,
                                         left: o.bndbox.xmin
                                     }
                                 };
