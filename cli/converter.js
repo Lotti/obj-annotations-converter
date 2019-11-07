@@ -113,7 +113,7 @@ if (program.from === `watson` && program.to === `voc`) {
         });
     }
 } else if (program.from === `voc` && program.to === `watson`) {
-    const entries = fg.sync(path.join(program.source, `*`), options);
+    const entries = fg.sync(path.join(program.source, `*.xml`), options);
     console.log(chalk.green(`Found ${entries.length} entries.`));
     let i = 0;
     for (const entry of entries) {
