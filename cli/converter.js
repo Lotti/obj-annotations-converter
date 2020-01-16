@@ -8,12 +8,13 @@ const fg = require(`fast-glob`);
 const fs = require(`fs-extra`);
 const xmlbuilder = require(`xmlbuilder`);
 const xmlParser = require(`fast-xml-parser`);
+const imageSize = require('image-size');
 
 program
     .version(`0.1`)
     .usage(` --from watson --to voc --source . --target ./annotations`)
-    .option(`--from <type>`, `Set annotation origin format [watson, voc]`, /^(watson|voc)$/i, `watson`)
-    .option(`--to <type>`, `Set annotation destination format [watson, voc]`, /^(watson|voc)$/i, `voc`)
+    .option(`--from <type>`, `Set annotation origin format [watson, voc]`, /^(watson|voc|ca)$/i, `watson`)
+    .option(`--to <type>`, `Set annotation destination format [watson, voc]`, /^(watson|voc|ca)$/i, `voc`)
     .option(`--source <src>`, `origin directory`)
     .option(`--target <dst>`, `target directory`)
     .parse(process.argv);
@@ -189,6 +190,83 @@ if (program.from === `watson` && program.to === `voc`) {
                             console.log(`${fileDst} generated`);
                         }
                     });
+                } catch (error) {
+                    console.error(error);
+                    console.error(chalk.red(`Can't convert file ${entry}. Skipping it.`));
+                }
+            }
+        });
+    }
+} else if (program.from === `ca` && program.to === `watson`) {
+    const entries = fg.sync(path.join(program.source, `*.json`), options);
+    console.log(chalk.green(`Found ${entries.length} entries.`));
+    let i = 0;
+    for (const entry of entries) {
+        fs.readFile(entry, {encoding: `utf8`}, async (err, data) => {
+            if (err) {
+                console.error(chalk.red(`Can't access file ${entry}. Skipping it.`));
+            } else {
+                try {
+                    const jsonObj = JSON.parse(data);
+
+                    if (!jsonObj.annotations) {
+                        console.error(`Can't find field "annotations" in file ${entry}`);
+                    } else {
+
+                        const keys = Object.keys(jsonObj.annotations);
+
+                        for (const k of keys) {
+                            const file = k;
+                            const annotations = jsonObj.annotations[k];
+                            const fileName = path.basename(file, path.extname(file));
+                            const filePath = path.join(path.dirname(entry), file);
+
+                            try {
+                                const size = await imageSize(filePath);
+                                const json = {
+                                    updated: new Date().toISOString(),
+                                    dimensions: {
+                                        width: size.width,
+                                        height: size.height,
+                                    },
+                                    source: {
+                                        type: `file`,
+                                        filename: file,
+                                    },
+                                    created: new Date().toISOString(),
+                                    image_id: fileName,
+                                    training_data: {
+                                        objects: annotations.map((o) => {
+                                            return {
+                                                object: o.label,
+                                                location: {
+                                                    width: Math.round(o.x2 * size.width - o.x * size.width),
+                                                    top: Math.round(o.y * size.height),
+                                                    height: Math.round(o.y2 * size.height - o.y * size.height),
+                                                    left: Math.round(o.x * size.width),
+                                                }
+                                            };
+                                        })
+                                    }
+                                };
+
+                                // writing json
+                                const fileDst = path.join(target, `${fileName}.json`);
+                                const jsonString = JSON.stringify(json, null, 4);
+                                fs.writeFile(fileDst, jsonString, {encoding: `utf8`}, (err) => {
+                                    if (err) {
+                                        console.error(chalk.red(`Can't write file ${fileDst}. Skipping it.`));
+                                    } else {
+                                        i++;
+                                        console.log(`${fileDst} generated`);
+                                    }
+                                });
+                            } catch (error) {
+                                console.error(error);
+                                console.error(chalk.red(`Can't open file ${filePath}. Skipping it.`));
+                            }
+                        }
+                    }
                 } catch (error) {
                     console.error(error);
                     console.error(chalk.red(`Can't convert file ${entry}. Skipping it.`));

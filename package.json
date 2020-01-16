@@ -15,15 +15,16 @@
     "obj-annotation-converter": "./cli/converter.js"
   },
   "dependencies": {
-    "chalk": "^2.4.2",
-    "commander": "^2.20.0",
-    "dotenv": "^8.0.0",
-    "fast-glob": "^3.0.4",
-    "fast-xml-parser": "^3.12.19",
+    "chalk": "^3.0.0",
+    "commander": "^4.1.0",
+    "dotenv": "^8.2.0",
+    "fast-glob": "^3.1.1",
+    "fast-xml-parser": "^3.16.0",
     "fs-extra": "^8.1.0",
+    "image-size": "^0.8.3",
     "xmlbuilder": "^13.0.2"
   },
   "devDependencies": {
-    "eslint": "^6.1.0"
+    "eslint": "^6.8.0"
   }
 }
