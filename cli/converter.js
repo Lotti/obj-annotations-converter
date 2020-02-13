@@ -12,7 +12,7 @@ const imageSize = require('image-size');
 const uuidv4 = require('uuid/v4');
 
 program
-    .version(`0.1`)
+    .version(`0.2`)
     .usage(` --from watson --to voc --source . --target ./annotations`)
     .option(`--from <type>`, `Set annotation origin format [watson, voc]`, /^(watson|voc|ca)$/i, `watson`)
     .option(`--to <type>`, `Set annotation destination format [watson, voc]`, /^(watson|voc|ca)$/i, `voc`)

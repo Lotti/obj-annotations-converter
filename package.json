@@ -12,7 +12,7 @@
   "author": "Valerio Riva <valerio.riva@it.ibm.com>",
   "license": "MIT",
   "bin": {
-    "obj-annotation-converter": "./cli/converter.js"
+    "obj-annotations-converter": "./cli/converter.js"
   },
   "dependencies": {
     "chalk": "^3.0.0",
