@@ -9,6 +9,7 @@ const fs = require(`fs-extra`);
 const xmlbuilder = require(`xmlbuilder`);
 const xmlParser = require(`fast-xml-parser`);
 const imageSize = require('image-size');
+const uuidv4 = require('uuid/v4');
 
 program
     .version(`0.1`)
@@ -274,6 +275,63 @@ if (program.from === `watson` && program.to === `voc`) {
             }
         });
     }
+} else if (program.from === `watson` && program.to === `ca`) {
+    const entries = fg.sync(path.join(program.source, `*.json`), options);
+    console.log(chalk.green(`Found ${entries.length} entries.`));
+    let i = 0;
+    const ps = [];
+    for (const entry of entries) {
+        ps.push(fs.readFile(entry, {encoding: `utf8`}).then((data) => {
+            try {
+                return JSON.parse(data);
+            } catch (error) {
+                console.error(error);
+                console.error(chalk.red(`Can't convert file ${entry}. Skipping it.`));
+            }
+        }).then((json) => {
+            console.log(`Parsed file: ${entry}`);
+            return json;
+        }).catch((error) => {
+            console.error(error);
+            console.error(chalk.red(`Can't access file ${entry}. Skipping it.`));
+        }));
+    }
+
+    Promise.all(ps).then((jsons) => {
+        const labels = [];
+        const annotations = {};
+        for (const json of jsons) {
+            const filename = json.source.filename;
+            for (const o of json.training_data.objects) {
+                labels.push(o.object);
+
+                if (!annotations[filename]) {
+                    annotations[filename] = [];
+                }
+                annotations[filename].push({
+                    x: o.location.left,
+                    y: o.location.top,
+                    x2: o.location.width - o.location.left,
+                    y2: o.location.height - o.location.top,
+                    id: uuidv4(),
+                    label: o.object,
+                });
+            }
+        }
+
+        return {
+            version: '1.0',
+            type: 'localization',
+            labels: labels.filter((value, index, self) => self.indexOf(value) === index),
+            annotations,
+        };
+    }).then((json) => {
+        const fileDst = path.join(target, `_annotations.json`);
+        return fs.writeFile(fileDst, JSON.stringify(json), 'utf8');
+    }).catch((error) => {
+        console.error(error);
+        console.error(chalk.red(`Can't create _annotations.json file.`));
+    });
 } else {
     console.error(chalk.bold.red(`Can't convert from ${program.from} to ${program.to}: case not supported!`));
     process.exit(1);
