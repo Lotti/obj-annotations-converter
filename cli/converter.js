@@ -90,10 +90,10 @@ if (program.from === `watson` && program.to === `voc`) {
                         obj.ele(`truncated`, {}, 0);
                         obj.ele(`difficult`, {}, 0);
                         const bndbox = obj.ele(`bndbox`);
-                        bndbox.ele(`xmin`, {}, o.location.left);
-                        bndbox.ele(`ymin`, {}, o.location.top);
-                        bndbox.ele(`xmax`, {}, o.location.left + o.location.width);
-                        bndbox.ele(`ymax`, {}, o.location.top + o.location.height);
+                        bndbox.ele(`xmin`, {}, Math.round(o.location.left));
+                        bndbox.ele(`ymin`, {}, Math.round(o.location.top));
+                        bndbox.ele(`xmax`, {}, Math.round(o.location.left + o.location.width));
+                        bndbox.ele(`ymax`, {}, Math.round(o.location.top + o.location.height));
                     }
 
                     // writing xml file
@@ -169,10 +169,10 @@ if (program.from === `watson` && program.to === `voc`) {
                                 return {
                                     object: o.name,
                                     location: {
-                                        width: o.bndbox.xmax - o.bndbox.xmin,
-                                        top: o.bndbox.ymin,
-                                        height: o.bndbox.ymax - o.bndbox.ymin,
-                                        left: o.bndbox.xmin
+                                        width: Math.round(o.bndbox.xmax - o.bndbox.xmin),
+                                        top: Math.round(o.bndbox.ymin),
+                                        height: Math.round(o.bndbox.ymax - o.bndbox.ymin),
+                                        left: Math.round(o.bndbox.xmin)
                                     }
                                 };
                             })
@@ -309,10 +309,10 @@ if (program.from === `watson` && program.to === `voc`) {
                     annotations[filename] = [];
                 }
                 annotations[filename].push({
-                    x: o.location.left,
-                    y: o.location.top,
-                    x2: o.location.width - o.location.left,
-                    y2: o.location.height - o.location.top,
+                    x: Math.round(o.location.left),
+                    y: Math.round(o.location.top),
+                    x2: Math.round(o.location.width - o.location.left),
+                    y2: Math.round(o.location.height - o.location.top),
                     id: uuidv4(),
                     label: o.object,
                 });
