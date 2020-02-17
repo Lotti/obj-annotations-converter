@@ -10,6 +10,7 @@ const xmlbuilder = require(`xmlbuilder`);
 const xmlParser = require(`fast-xml-parser`);
 const imageSize = require('image-size');
 const uuidv4 = require('uuid/v4');
+const {between} = require('../helpers/helpers');
 
 program
     .version(`0.2`)
@@ -90,10 +91,10 @@ if (program.from === `watson` && program.to === `voc`) {
                         obj.ele(`truncated`, {}, 0);
                         obj.ele(`difficult`, {}, 0);
                         const bndbox = obj.ele(`bndbox`);
-                        bndbox.ele(`xmin`, {}, Math.round(o.location.left));
-                        bndbox.ele(`ymin`, {}, Math.round(o.location.top));
-                        bndbox.ele(`xmax`, {}, Math.round(o.location.left + o.location.width));
-                        bndbox.ele(`ymax`, {}, Math.round(o.location.top + o.location.height));
+                        bndbox.ele(`xmin`, {}, between(o.location.left, 0, json.dimensions.width, true));
+                        bndbox.ele(`ymin`, {}, between(o.location.top, 0, json.dimensions.height, true));
+                        bndbox.ele(`xmax`, {}, between(o.location.left + o.location.width, 0, json.dimensions.width, true));
+                        bndbox.ele(`ymax`, {}, between(o.location.top + o.location.height, 0, json.dimensions.height, true));
                     }
 
                     // writing xml file
@@ -169,10 +170,10 @@ if (program.from === `watson` && program.to === `voc`) {
                                 return {
                                     object: o.name,
                                     location: {
-                                        width: Math.round(o.bndbox.xmax - o.bndbox.xmin),
-                                        top: Math.round(o.bndbox.ymin),
-                                        height: Math.round(o.bndbox.ymax - o.bndbox.ymin),
-                                        left: Math.round(o.bndbox.xmin)
+                                        left: between(o.bndbox.xmin, 0, jsonObj.annotation.size.width, true),
+                                        top: between(o.bndbox.ymin, 0, jsonObj.annotation.size.height, true),
+                                        width: between(o.bndbox.xmax - o.bndbox.xmin, 0, jsonObj.annotation.size.width, true),
+                                        height: between(o.bndbox.ymax - o.bndbox.ymin, 0, jsonObj.annotation.size.height, true),
                                     }
                                 };
                             })
@@ -222,8 +223,16 @@ if (program.from === `watson` && program.to === `voc`) {
                             const fileName = path.basename(file, path.extname(file));
                             const filePath = path.join(path.dirname(entry), file);
 
+                            let size;
                             try {
-                                const size = await imageSize(filePath);
+                                size = await imageSize(filePath);
+                            } catch (error) {
+                                console.error(error);
+                                console.error(chalk.red(`Can't open file ${filePath}. Skipping it.`));
+                                continue;
+                            }
+
+                            try {
                                 const json = {
                                     updated: new Date().toISOString(),
                                     dimensions: {
@@ -241,10 +250,10 @@ if (program.from === `watson` && program.to === `voc`) {
                                             return {
                                                 object: o.label,
                                                 location: {
-                                                    width: Math.round(o.x2 * size.width - o.x * size.width),
-                                                    top: Math.round(o.y * size.height),
-                                                    height: Math.round(o.y2 * size.height - o.y * size.height),
-                                                    left: Math.round(o.x * size.width),
+                                                    left: between(o.x * size.width, 0, size.width, true),
+                                                    top: between(o.y * size.height, 0, size.height, true),
+                                                    width: between(o.x2 * size.width - o.x * size.width, 0, size.width, true),
+                                                    height: between(o.y2 * size.height - o.y * size.height, 0, size.height, true),
                                                 }
                                             };
                                         })
@@ -264,7 +273,7 @@ if (program.from === `watson` && program.to === `voc`) {
                                 });
                             } catch (error) {
                                 console.error(error);
-                                console.error(chalk.red(`Can't open file ${filePath}. Skipping it.`));
+                                console.error(chalk.red(`Can't write converted annotation for ${filePath}. Skipping it.`));
                             }
                         }
                     }
@@ -309,10 +318,10 @@ if (program.from === `watson` && program.to === `voc`) {
                     annotations[filename] = [];
                 }
                 annotations[filename].push({
-                    x: Math.round(o.location.left),
-                    y: Math.round(o.location.top),
-                    x2: Math.round(o.location.width - o.location.left),
-                    y2: Math.round(o.location.height - o.location.top),
+                    x: between(o.location.left, 0, json.dimensions.width, true),
+                    y: between(o.location.top, 0, json.dimensions.height, true),
+                    x2: between(o.location.width - o.location.left, 0, json.dimensions.width, true),
+                    y2: between(o.location.height - o.location.top, 0, json.dimensions.height, true),
                     id: uuidv4(),
                     label: o.object,
                 });
