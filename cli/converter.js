@@ -318,10 +318,10 @@ if (program.from === `watson` && program.to === `voc`) {
                     annotations[filename] = [];
                 }
                 annotations[filename].push({
-                    x: between(o.location.left, 0, json.dimensions.width, true),
-                    y: between(o.location.top, 0, json.dimensions.height, true),
-                    x2: between(o.location.width - o.location.left, 0, json.dimensions.width, true),
-                    y2: between(o.location.height - o.location.top, 0, json.dimensions.height, true),
+                    x: between(o.location.left / json.dimensions.width, 0, 1, false),
+                    y: between(o.location.top / json.dimensions.height, 0, 1, false),
+                    x2: between((o.location.left + o.location.width) / json.dimensions.width, 0, 1, false),
+                    y2: between((o.location.top + o.location.height) / json.dimensions.height, 0, 1, false),
                     id: uuidv4(),
                     label: o.object,
                 });
@@ -336,7 +336,9 @@ if (program.from === `watson` && program.to === `voc`) {
         };
     }).then((json) => {
         const fileDst = path.join(target, `_annotations.json`);
-        return fs.writeFile(fileDst, JSON.stringify(json), 'utf8');
+        return fs.writeFile(fileDst, JSON.stringify(json), 'utf8').then(() => {
+            console.log(`Cloud Annotations file generated at ${fileDst}`);
+        });
     }).catch((error) => {
         console.error(error);
         console.error(chalk.red(`Can't create _annotations.json file.`));
