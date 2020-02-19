@@ -166,19 +166,23 @@ if (program.from === `watson` && program.to === `voc`) {
                         created: new Date().toISOString(),
                         image_id: jsonObj.annotation.source.database,
                         training_data: {
-                            objects: jsonObj.annotation.object && jsonObj.annotation.object.map((o) => {
-                                return {
-                                    object: o.name,
-                                    location: {
-                                        left: between(o.bndbox.xmin, 0, jsonObj.annotation.size.width, true),
-                                        top: between(o.bndbox.ymin, 0, jsonObj.annotation.size.height, true),
-                                        width: between(o.bndbox.xmax - o.bndbox.xmin, 0, jsonObj.annotation.size.width, true),
-                                        height: between(o.bndbox.ymax - o.bndbox.ymin, 0, jsonObj.annotation.size.height, true),
-                                    }
-                                };
-                            })
+                            objects: [],
                         }
                     };
+
+                    if (jsonObj.annotation.object) {
+                        json.training_data.objects = jsonObj.annotation.object.map((o) => {
+                            return {
+                                object: o.name,
+                                location: {
+                                    left: between(o.bndbox.xmin, 0, jsonObj.annotation.size.width, true),
+                                    top: between(o.bndbox.ymin, 0, jsonObj.annotation.size.height, true),
+                                    width: between(o.bndbox.xmax - o.bndbox.xmin, 0, jsonObj.annotation.size.width, true),
+                                    height: between(o.bndbox.ymax - o.bndbox.ymin, 0, jsonObj.annotation.size.height, true),
+                                }
+                            };
+                        });
+                    }
 
                     // writing json
                     const fileName = `${path.basename(entry, `.xml`)}.json`;
@@ -294,6 +298,7 @@ if (program.from === `watson` && program.to === `voc`) {
             try {
                 return JSON.parse(data);
             } catch (error) {
+                return undefined;
                 console.error(error);
                 console.error(chalk.red(`Can't convert file ${entry}. Skipping it.`));
             }
@@ -310,21 +315,23 @@ if (program.from === `watson` && program.to === `voc`) {
         const labels = [];
         const annotations = {};
         for (const json of jsons) {
-            const filename = json.source.filename;
-            for (const o of json.training_data.objects) {
-                labels.push(o.object);
+            if (json) {
+                const filename = json.source.filename;
+                for (const o of json.training_data.objects) {
+                    labels.push(o.object);
 
-                if (!annotations[filename]) {
-                    annotations[filename] = [];
+                    if (!annotations[filename]) {
+                        annotations[filename] = [];
+                    }
+                    annotations[filename].push({
+                        x: between(o.location.left / json.dimensions.width, 0, 1, false),
+                        y: between(o.location.top / json.dimensions.height, 0, 1, false),
+                        x2: between((o.location.left + o.location.width) / json.dimensions.width, 0, 1, false),
+                        y2: between((o.location.top + o.location.height) / json.dimensions.height, 0, 1, false),
+                        id: uuidv4(),
+                        label: o.object,
+                    });
                 }
-                annotations[filename].push({
-                    x: between(o.location.left / json.dimensions.width, 0, 1, false),
-                    y: between(o.location.top / json.dimensions.height, 0, 1, false),
-                    x2: between((o.location.left + o.location.width) / json.dimensions.width, 0, 1, false),
-                    y2: between((o.location.top + o.location.height) / json.dimensions.height, 0, 1, false),
-                    id: uuidv4(),
-                    label: o.object,
-                });
             }
         }
 
