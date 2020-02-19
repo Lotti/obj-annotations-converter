@@ -298,9 +298,9 @@ if (program.from === `watson` && program.to === `voc`) {
             try {
                 return JSON.parse(data);
             } catch (error) {
-                return undefined;
                 console.error(error);
                 console.error(chalk.red(`Can't convert file ${entry}. Skipping it.`));
+                return undefined;
             }
         }).then((json) => {
             console.log(`Parsed file: ${entry}`);
