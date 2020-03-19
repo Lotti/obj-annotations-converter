@@ -15,8 +15,8 @@ const {between} = require('../helpers/helpers');
 program
     .version(`0.2`)
     .usage(` --from watson --to voc --source . --target ./annotations`)
-    .option(`--from <type>`, `Set annotation origin format [watson, voc]`, /^(watson|voc|ca)$/i, `watson`)
-    .option(`--to <type>`, `Set annotation destination format [watson, voc]`, /^(watson|voc|ca)$/i, `voc`)
+    .option(`--from <type>`, `Set annotation origin format [watson, voc, ca]`, /^(watson|voc|ca)$/i, `watson`)
+    .option(`--to <type>`, `Set annotation destination format [watson, voc, ca]`, /^(watson|voc|ca)$/i, `voc`)
     .option(`--source <src>`, `origin directory`)
     .option(`--target <dst>`, `target directory`)
     .parse(process.argv);
@@ -116,7 +116,7 @@ if (program.from === `watson` && program.to === `voc`) {
         });
     }
 } else if (program.from === `voc` && program.to === `watson`) {
-    const entries = fg.sync(path.join(program.source, `*.xml`), options);
+    const entries = fg.sync(path.join(source, `*.xml`), options);
     console.log(chalk.green(`Found ${entries.length} entries.`));
     let i = 0;
     for (const entry of entries) {
@@ -204,7 +204,7 @@ if (program.from === `watson` && program.to === `voc`) {
         });
     }
 } else if (program.from === `ca` && program.to === `watson`) {
-    const entries = fg.sync(path.join(program.source, `*.json`), options);
+    const entries = fg.sync(path.join(source, `*.json`), options);
     console.log(chalk.green(`Found ${entries.length} entries.`));
     let i = 0;
     for (const entry of entries) {
@@ -289,7 +289,7 @@ if (program.from === `watson` && program.to === `voc`) {
         });
     }
 } else if (program.from === `watson` && program.to === `ca`) {
-    const entries = fg.sync(path.join(program.source, `*.json`), options);
+    const entries = fg.sync(path.join(source, `*.json`), options);
     console.log(chalk.green(`Found ${entries.length} entries.`));
     let i = 0;
     const ps = [];
