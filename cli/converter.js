@@ -231,7 +231,6 @@ if (program.from === `watson` && program.to === `voc`) {
                             try {
                                 size = await imageSize(filePath);
                             } catch (error) {
-                                console.error(error);
                                 console.error(chalk.red(`Can't open file ${filePath}. Skipping it.`));
                                 continue;
                             }
