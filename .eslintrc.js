@@ -1,6 +1,6 @@
 module.exports = {
     parserOptions: {
-        ecmaVersion: 2017,
+        ecmaVersion: 2018,
     },
     env: {
         node: true,
@@ -22,7 +22,7 @@ module.exports = {
         "no-cond-assign": [`error`, `always`],
 
         // disable rules from base configurations
-        "no-console": `warn`,
+        "no-console": `off`,
 
         "no-unused-vars": `warn`,
 

@@ -59,7 +59,6 @@ const annotationToJson = async (file, fileName, annotations, entry) => {
 module.exports = (source, target, options) => {
     const entries = fg.sync(path.join(source, `*.json`), options);
     console.log(chalk.green(`Found ${entries.length} entries.`));
-    let i = 0;
     for (const entry of entries) {
         fs.readFile(entry, {encoding: `utf8`}, async (err, data) => {
             if (err) {
@@ -83,13 +82,12 @@ module.exports = (source, target, options) => {
                                     if (err) {
                                         console.error(chalk.red(`Can't write file ${fileDst}. Skipping it.`));
                                     } else {
-                                        i++;
                                         console.log(`${fileDst} generated`);
                                     }
                                 });
                             } catch (error) {
                                 console.error(error);
-                                console.error(chalk.red(`Can't write converted annotation for ${filePath}. Skipping it.`));
+                                console.error(chalk.red(`Can't write converted annotation for ${entry}. Skipping it.`));
                             }
                         }
                     }

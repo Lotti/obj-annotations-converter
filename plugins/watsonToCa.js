@@ -2,6 +2,7 @@ const path = require(`path`);
 const fg = require(`fast-glob`);
 const fs = require(`fs-extra`);
 const chalk = require(`chalk`);
+const { v4: uuidv4 } = require(`uuid`);
 const {between} = require(`../helpers/helpers`);
 
 /**
@@ -33,7 +34,6 @@ const jsonToAnnotation = async (json) => {
 module.exports = (source, target, options) => {
     const entries = fg.sync(path.join(source, `*.json`), options);
     console.log(chalk.green(`Found ${entries.length} entries.`));
-    let i = 0;
     const ps = [];
     for (const entry of entries) {
         ps.push(fs.readFile(entry, {encoding: `utf8`}).then((data) => {

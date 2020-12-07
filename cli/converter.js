@@ -9,7 +9,7 @@ const watsonToCa = require(`../plugins/watsonToCa`);
 const vocToWatson = require(`../plugins/vocToWatson`);
 const caToWatson = require(`../plugins/caToWatson`);
 const watsonToMVI = require(`../plugins/watsonToMVI`);
-// const vocToMVI = require('../plugins/vocToMVI');
+const vocToMVI = require(`../plugins/vocToMVI`);
 
 program.version(`0.2`)
     .usage(` --from watson --to voc --source . --target ./annotations`)

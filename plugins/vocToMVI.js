@@ -1,3 +1,15 @@
+
+/**
+ *
+ * @param source
+ * @param target
+ * @param globOptions
+ * @param datasetName
+ * @returns {Promise<void>}
+ */
+module.exports = async (source, target, globOptions, datasetName) => {
+};
+/*
 {
   "usage": "generic",
   "name": "Hera test",
@@ -54,3 +66,4 @@
       "uploaded_at": 1607108590623
   }
 ]
+*/
