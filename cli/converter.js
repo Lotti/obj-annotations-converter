@@ -4,11 +4,11 @@ const path = require(`path`);
 const program = require(`commander`);
 const chalk = require(`chalk`);
 const fs = require(`fs-extra`);
-const watsonToVoc = require('../plugins/watsonToVoc');
-const watsonToCa = require('../plugins/watsonToCa');
-const vocToWatson = require('../plugins/vocToWatson');
-const caToWatson = require('../plugins/caToWatson');
-const watsonToMVI = require('../plugins/watsonToMVI');
+const watsonToVoc = require(`../plugins/watsonToVoc`);
+const watsonToCa = require(`../plugins/watsonToCa`);
+const vocToWatson = require(`../plugins/vocToWatson`);
+const caToWatson = require(`../plugins/caToWatson`);
+const watsonToMVI = require(`../plugins/watsonToMVI`);
 // const vocToMVI = require('../plugins/vocToMVI');
 
 program.version(`0.2`)
@@ -25,7 +25,7 @@ if (program.from === program.to) {
     process.exit(1);
 }
 
-if (program.to === 'mvi' && program.dataset.length === 0) {
+if (program.to === `mvi` && program.dataset.length === 0) {
     console.error(chalk.bold.red(`You must provide a dataset name using parameter --dataset for MVI`));
     process.exit(1);
 }
@@ -77,9 +77,9 @@ const main = async (source, target, globOptions) => {
     } else if (program.from === `watson` && program.to === `ca`) {
         await watsonToCa(source, target, globOptions);
     } else {
-        throw new Error(`Can't convert from ${program.from} to ${program.to}: case not supported!`)
+        throw new Error(`Can't convert from ${program.from} to ${program.to}: case not supported!`);
     }
-}
+};
 
 main(source, target, globOptions).then(() => {
     console.log(chalk.bold.green(`Done!`));
