@@ -14,7 +14,7 @@ const {between} = require(`../helpers/helpers`);
  * @returns {string}
  */
 const jsonToXML = (source, json, id) => {
-// creating xml file from json data
+    // creating xml file from json data
     const xml = xmlbuilder.create(`annotation`);
     const size = xml.ele(`size`);
     size.ele(`width`, {}, json.dimensions.width);

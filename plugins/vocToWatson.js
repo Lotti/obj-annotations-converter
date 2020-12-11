@@ -78,11 +78,11 @@ const xmlToJson = (source, xmlData) => {
  *
  * @param source
  * @param target
- * @param options
+ * @param globOptions
  * @returns {Promise<void>}
  */
-module.exports = async (source, target, options) => {
-    const stream = fg.stream(path.join(source, `*.xml`), options);
+module.exports = async (source, target, globOptions) => {
+    const stream = fg.stream(path.join(source, `*.xml`), globOptions);
     for await (const entry of stream) {
         const fileName = `${path.basename(entry, `.xml`)}.json`;
         const fileDst = path.join(target, fileName);

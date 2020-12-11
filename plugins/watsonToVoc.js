@@ -12,7 +12,7 @@ const {between} = require(`../helpers/helpers`);
  * @returns {string}
  */
 const jsonToXML = (source, json) => {
-// creating xml file from json data
+    // creating xml file from json data
     const xml = xmlbuilder.create(`annotation`);
     xml.ele(`folder`, {}, `Unspecified`);
     xml.ele(`filename`, {}, json.source.filename);

@@ -67,7 +67,7 @@ const main = async (source, target, globOptions) => {
     if (program.from === `watson` && program.to === `mvi`) {
         await watsonToMVI(source, target, globOptions, program.dataset);
     } else if (program.from === `voc` && program.to === `mvi`) {
-        await vocToMVI(source, target, globOptions);
+        await vocToMVI(source, target, globOptions, program.dataset);
     } else if (program.from === `watson` && program.to === `voc`) {
         await watsonToVoc(source, target, globOptions);
     } else if (program.from === `voc` && program.to === `watson`) {

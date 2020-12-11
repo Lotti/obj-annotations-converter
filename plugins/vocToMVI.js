@@ -1,3 +1,87 @@
+const path = require(`path`);
+const fg = require(`fast-glob`);
+const fs = require(`fs-extra`);
+const chalk = require(`chalk`);
+const xmlParser = require(`fast-xml-parser`);
+const xmlbuilder = require(`xmlbuilder`);
+const {v4: uuidv4} = require(`uuid`);
+
+const XMLtoXML = (source, xmlData, id) => {
+  // parsing xml file
+  const options = {
+    attributeNamePrefix: `@_`,
+    attrNodeName: `attr`, //default is 'false'
+    textNodeName: `#text`,
+    ignoreAttributes: true,
+    ignoreNameSpace: false,
+    allowBooleanAttributes: false,
+    parseNodeValue: true,
+    parseAttributeValue: false,
+    trimValues: true,
+    cdataTagName: `__cdata`, //default is 'false'
+    cdataPositionChar: `\\c`,
+    localeRange: ``, //To support non english character in tag/attribute values.
+    parseTrueNumberOnly: false,
+  };
+
+  if (xmlParser.validate(xmlData) !== true) {
+    throw new Error(`Can't parse xml`);
+  }
+
+  const jsonObj = xmlParser.convertToJson(xmlParser.getTraversalObj(xmlData, options), options);
+  if (jsonObj.annotation.object) {
+    jsonObj.annotation.object = Array.isArray(jsonObj.annotation.object) ? jsonObj.annotation.object : [jsonObj.annotation.object];
+  }
+
+  // creating xml file from json data
+  const xml = xmlbuilder.create(`annotation`);
+  const size = xml.ele(`size`);
+  size.ele(`width`, {}, jsonObj.annotation.size.width);
+  size.ele(`height`, {}, jsonObj.annotation.size.height);
+  size.ele(`dept`, {}, 3);
+  xml.ele(`segmented`, {}, 0);
+
+  if (jsonObj.annotation.object) {
+    for (const o of jsonObj.annotation.object) {
+      const name = o.name.replace(/[-"/\\|[\]{}();:,]/g,`_`);
+      const obj = xml.ele(`object`);
+      obj.ele(`_id`, {}, uuidv4());
+      obj.ele(`file_id`, {}, id);
+      obj.ele(`name`, {}, name);
+      obj.ele(`generate_type`, {}, `manual`);
+      const bndbox = obj.ele(`bndbox`);
+      bndbox.ele(`xmin`, {}, o.bndbox.xmin);
+      bndbox.ele(`ymin`, {}, o.bndbox.ymin);
+      bndbox.ele(`xmax`, {}, o.bndbox.xmax);
+      bndbox.ele(`ymax`, {}, o.bndbox.ymax);
+    }
+  }
+
+  return {xmlString: xml.end({pretty: true}), filename: jsonObj.annotation.filename};
+};
+
+/**
+ *
+ * @param uuid
+ * @param fileName
+ * @returns {{generate_type: null, upload_type: string, category_name: null, category_id: null, uploaded_at: number, file_type: string, parent_id: null, created_at: number, label_type: string, original_file_name, _id}}
+ */
+const mviEntry = (uuid, fileName) => {
+  const now = Date.now();
+  return {
+    _id: uuid,
+    file_type: `image`,
+    parent_id: null,
+    generate_type: null,
+    category_id: null,
+    category_name: null,
+    created_at: now,
+    label_type: `manual`,
+    original_file_name: fileName,
+    upload_type: `file_upload`,
+    uploaded_at: now,
+  };
+};
 
 /**
  *
@@ -8,62 +92,44 @@
  * @returns {Promise<void>}
  */
 module.exports = async (source, target, globOptions, datasetName) => {
+  const files = [];
+  const stream = fg.stream(path.join(source, `*.xml`), globOptions);
+  for await (const entry of stream) {
+    const fileName = path.basename(entry.toString());
+    const fileDst = path.join(target, fileName);
+    try {
+      const data = await fs.readFile(entry, {encoding: `utf8`});
+      try {
+        const id = uuidv4();
+        const {xmlString, filename} = XMLtoXML(source, data, id);
+        files.push(mviEntry(id, filename));
+        try {
+          await fs.writeFile(fileDst, xmlString, {encoding: `utf8`});
+          console.log(`${fileDst} generated`);
+        } catch (error) {
+          console.error(chalk.red(`Can't write file ${fileDst}. Skipping it.`));
+        }
+      } catch (error) {
+        console.error(error);
+        console.error(chalk.red(`Can't convert file ${entry} to XML. Skipping it.`));
+      }
+    } catch (error) {
+      console.error(chalk.red(`Can't access file ${entry}. Skipping it.`));
+    }
+  }
+
+  const propJson = {
+    usage: `generic`,
+    name: datasetName,
+    type: 0,
+    scenario: ``,
+    prop_version: `PROP_VESION_1`,
+    pre_process: ``,
+    category_prop_info: `[]`,
+    action_prop_info: `[]`,
+    file_prop_info: JSON.stringify(files),
+  };
+  const propName = `prop.json`;
+  const propDst = path.join(target, propName);
+  await fs.writeFile(propDst, JSON.stringify(propJson), {encoding: `utf-8`});
 };
-/*
-{
-  "usage": "generic",
-  "name": "Hera test",
-  "type": 0,
-  "scenario": "",
-  "prop_version": "PROP_VESION_1",
-  "pre_process": "",
-  "category_prop_info": "[{\"_id\":\"8796560d-3f7a-4c80-ada1-179df6598630\",\"name\":\"waste\"}, {\"_id\":\"6b15dcd1-aa1f-4d1d-9a83-244e29960eeb\",\"name\":\"dumpster\"}]",
-  "action_prop_info": "[]",
-  "file_prop_info": "[{\"_id\":\"3776d982-74a7-42ed-b6c6-70e6c4a5464e\",\"file_type\":\"image\",\"parent_id\":null,\"generate_type\":null,\"category_id\":\"8796560d-3f7a-4c80-ada1-179df6598630\",\"category_name\":\"waste\",\"created_at\":1607108590660,\"label_type\":\"manual\",\"original_file_name\":\"fca8e485-0751-41e0-943f-709ae09a78c1.jpg\",\"upload_type\":\"file_upload\",\"uploaded_at\":1607108590660}, {\"_id\":\"8cdcbb4c-5a70-4ba8-8376-0100701567df\",\"file_type\":\"image\",\"parent_id\":null,\"generate_type\":null,\"category_id\":\"6b15dcd1-aa1f-4d1d-9a83-244e29960eeb\",\"category_name\":\"dumpster\",\"created_at\":1607108590623,\"label_type\":\"manual\",\"original_file_name\":\"f2250a34-1c0c-4ba6-84e4-5f8cd4ebf1f7.jpg\",\"upload_type\":\"file_upload\",\"uploaded_at\":1607108590623}]"
-}
-
-
-
-// category prop info
-[
-  {
-    "_id": "8796560d-3f7a-4c80-ada1-179df6598630",
-    "name": "waste"
-  },
-  {
-    "_id": "6b15dcd1-aa1f-4d1d-9a83-244e29960eeb",
-    "name": "dumpster"
-  }
-]
-
-
-
-// file prop info
-[
-  {
-    "_id": "3776d982-74a7-42ed-b6c6-70e6c4a5464e",
-    "file_type": "image",
-    "parent_id": null,
-    "generate_type": null,
-    "category_id": "8796560d-3f7a-4c80-ada1-179df6598630",
-    "category_name": "waste",
-    "created_at": 1607108590660,
-    "label_type": "manual",
-    "original_file_name": "fca8e485-0751-41e0-943f-709ae09a78c1.jpg",
-    "upload_type": "file_upload",
-    "uploaded_at": 1607108590660
-  }, {
-      "_id": "8cdcbb4c-5a70-4ba8-8376-0100701567df",
-      "file_type": "image",
-      "parent_id": null,
-      "generate_type": null,
-      "category_id": "6b15dcd1-aa1f-4d1d-9a83-244e29960eeb",
-      "category_name": "dumpster",
-      "created_at": 1607108590623,
-      "label_type": "manual",
-      "original_file_name": "f2250a34-1c0c-4ba6-84e4-5f8cd4ebf1f7.jpg",
-      "upload_type": "file_upload",
-      "uploaded_at": 1607108590623
-  }
-]
-*/
