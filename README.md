@@ -17,10 +17,14 @@ Supported scenarios:
 - from voc to watson
 - from watson to cloud annotation
 - from cloud annotation to watson
+- from watson to mvi
+- from voc to mvi
 
 #### TO DO:
 - implement voc to cloud annotations conversion
 - implement cloud annotations to voc conversion
+- implement mvi to watson conversion
+- implement mvi to voc conversion
 
 ---
 
