@@ -17,7 +17,7 @@ program.version(`0.2`)
     .option(`--to <type>`, `Set annotation destination format [watson, voc, ca, mvi]`, /^(watson|voc|ca|mvi)$/, `voc`)
     .option(`--source <src>`, `origin directory`)
     .option(`--target <dst>`, `target directory`)
-    .option(`--dataset <name>`, `dataset name`, ``)
+    .option(`--dataset <name>`, `dataset name (needed only when converting to mvi)`, ``)
     .parse(process.argv);
 
 if (program.from === program.to) {
