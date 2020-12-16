@@ -6,10 +6,12 @@ Supported formats:
 - Pascal VOC XML
 - IBM Watson Visual Recognition Json
 - cloud.annotations.ai Json
+- Maximo Visual Inspection import dataset format (custom XML VOC-like with additional prop.json file)
 
 Useful when you have preexisting annotations and want to play with 
 [IBM Watson Visual Recognition APIs](https://cloud.ibm.com/apidocs/visual-recognition/visual-recognition-v4), 
 [Cloud Annotations](https://cloud.annotations.ai/) 
+[Maximo Visual Inspection](https://www.ibm.com/products/ibm-maximo-visual-inspection)
 or Tensorflow 
 
 Supported scenarios:
