@@ -1,4 +1,5 @@
 const path = require(`path`);
+const normalize = require('normalize-path');
 const fg = require(`fast-glob`);
 const fs = require(`fs-extra`);
 const chalk = require(`chalk`);
@@ -32,7 +33,7 @@ const jsonToAnnotation = async (json) => {
  * @param options
  */
 module.exports = (source, target, options) => {
-    const entries = fg.sync(path.join(source, `*.json`), options);
+    const entries = fg.sync(normalize(path.join(source, `*.json`)), options);
     console.log(chalk.green(`Found ${entries.length} entries.`));
     const ps = [];
     for (const entry of entries) {

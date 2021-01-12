@@ -1,4 +1,5 @@
 const path = require(`path`);
+const normalize = require(`normalize-path`);
 const fg = require(`fast-glob`);
 const fs = require(`fs-extra`);
 const chalk = require(`chalk`);
@@ -72,7 +73,7 @@ const mviEntry = (uuid, fileName) => {
  */
 module.exports = async (source, target, globOptions, datasetName) => {
     const files = [];
-    const stream = fg.stream(path.join(source, `*.json`), globOptions);
+    const stream = fg.stream(normalize(path.join(source, `*.json`)), globOptions);
     for await (const entry of stream) {
         const fileName = `${path.basename(entry.toString(), `.json`)}.xml`;
         const fileDst = path.join(target, fileName);
@@ -102,7 +103,7 @@ module.exports = async (source, target, globOptions, datasetName) => {
         }
     }
 
-    const propJson =  {
+    const propJson = {
         usage: `generic`,
         name: datasetName,
         type: 0,

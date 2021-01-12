@@ -1,4 +1,5 @@
 const path = require(`path`);
+const normalize = require('normalize-path');
 const fg = require(`fast-glob`);
 const fs = require(`fs-extra`);
 const xmlParser = require(`fast-xml-parser`);
@@ -82,7 +83,7 @@ const xmlToJson = (source, xmlData) => {
  * @returns {Promise<void>}
  */
 module.exports = async (source, target, globOptions) => {
-    const stream = fg.stream(path.join(source, `*.xml`), globOptions);
+    const stream = fg.stream(normalize(path.join(source, `*.xml`)), globOptions);
     for await (const entry of stream) {
         const fileName = `${path.basename(entry, `.xml`)}.json`;
         const fileDst = path.join(target, fileName);

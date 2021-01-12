@@ -1,4 +1,5 @@
 const path = require(`path`);
+const normalize = require('normalize-path');
 const fg = require(`fast-glob`);
 const fs = require(`fs-extra`);
 const chalk = require(`chalk`);
@@ -57,7 +58,7 @@ const annotationToJson = async (file, fileName, annotations, entry) => {
  * @param options
  */
 module.exports = (source, target, options) => {
-    const entries = fg.sync(path.join(source, `*.json`), options);
+    const entries = fg.sync(normalize(path.join(source, `*.json`)), options);
     console.log(chalk.green(`Found ${entries.length} entries.`));
     for (const entry of entries) {
         fs.readFile(entry, {encoding: `utf8`}, async (err, data) => {
