@@ -10,10 +10,11 @@ const vocToWatson = require(`../plugins/vocToWatson`);
 const caToWatson = require(`../plugins/caToWatson`);
 const watsonToMVI = require(`../plugins/watsonToMVI`);
 const vocToMVI = require(`../plugins/vocToMVI`);
+const viaToMVI = require(`../plugins/viaToMVI`);
 
 program.version(`0.2`)
     .usage(` --from watson --to voc --source . --target ./annotations`)
-    .option(`--from <type>`, `Set annotation origin format [watson, voc, ca]`, /^(watson|voc|ca)$/, `watson`)
+    .option(`--from <type>`, `Set annotation origin format [watson, voc, ca]`, /^(watson|voc|ca|via)$/, `watson`)
     .option(`--to <type>`, `Set annotation destination format [watson, voc, ca, mvi]`, /^(watson|voc|ca|mvi)$/, `voc`)
     .option(`--source <src>`, `origin directory`)
     .option(`--target <dst>`, `target directory`)
@@ -68,6 +69,8 @@ const main = async (source, target, globOptions) => {
         await watsonToMVI(source, target, globOptions, program.dataset);
     } else if (program.from === `voc` && program.to === `mvi`) {
         await vocToMVI(source, target, globOptions, program.dataset);
+    } else if (program.from === `via` && program.to === `mvi`) {
+        await viaToMVI(source, target, globOptions, program.dataset);
     } else if (program.from === `watson` && program.to === `voc`) {
         await watsonToVoc(source, target, globOptions);
     } else if (program.from === `voc` && program.to === `watson`) {

@@ -21,6 +21,7 @@ Supported scenarios:
 - from cloud annotation to watson
 - from watson to mvi
 - from voc to mvi
+- from via to mvi for polygons
 
 #### TO DO:
 - implement voc to cloud annotations conversion
@@ -49,7 +50,7 @@ Usage: obj-annotations-converter --from watson --to voc --source . --target ./an
 
 Options:
   -V, --version     output the version number
-  --from <type>     Set annotation origin format [watson, voc, ca] (default: "watson")
+  --from <type>     Set annotation origin format [watson, voc, ca, via] (default: "watson")
   --to <type>       Set annotation destination format [watson, voc, ca, mvi] (default: "voc")
   --source <src>    origin directory
   --target <dst>    target directory
@@ -67,4 +68,5 @@ Options:
     obj-annotations-converter --from ca --to watson --source ./annotations-ca --target ./annotations-watson
     obj-annotations-converter --from watson --to mvi --source ./annotations-watson --target ./annotations-mvi --dataset "name"
     obj-annotations-converter --from voc --to mvi --source ./annotations-voc --target ./annotations-mvi --dataset "name"
+    obj-annotations-converter --from via --to mvi --source ./annotations-via --target ./annotations-mvi --dataset "name"
 ```
