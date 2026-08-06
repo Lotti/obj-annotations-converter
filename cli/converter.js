@@ -1,92 +1,112 @@
 #!/usr/bin/env node
-require(`dotenv`).config();
-const path = require(`path`);
-const program = require(`commander`);
-const chalk = require(`chalk`);
-const fs = require(`fs-extra`);
-const watsonToVoc = require(`../plugins/watsonToVoc`);
-const watsonToCa = require(`../plugins/watsonToCa`);
-const vocToWatson = require(`../plugins/vocToWatson`);
-const caToWatson = require(`../plugins/caToWatson`);
-const watsonToMVI = require(`../plugins/watsonToMVI`);
-const vocToMVI = require(`../plugins/vocToMVI`);
-const viaToMVI = require(`../plugins/viaToMVI`);
 
-program.version(`0.2`)
-    .usage(` --from watson --to voc --source . --target ./annotations`)
-    .option(`--from <type>`, `Set annotation origin format [watson, voc, ca]`, /^(watson|voc|ca|via)$/, `watson`)
-    .option(`--to <type>`, `Set annotation destination format [watson, voc, ca, mvi]`, /^(watson|voc|ca|mvi)$/, `voc`)
-    .option(`--source <src>`, `origin directory`)
-    .option(`--target <dst>`, `target directory`)
-    .option(`--dataset <name>`, `dataset name (needed only when converting to mvi)`, ``)
-    .parse(process.argv);
+import { parseArgs } from 'node:util';
+import path from 'node:path';
+import process from 'node:process';
+import caToWatson from '../plugins/caToWatson.js';
+import viaToMvi from '../plugins/viaToMVI.js';
+import vocToMvi from '../plugins/vocToMVI.js';
+import vocToWatson from '../plugins/vocToWatson.js';
+import watsonToCa from '../plugins/watsonToCa.js';
+import watsonToMvi from '../plugins/watsonToMVI.js';
+import watsonToVoc from '../plugins/watsonToVoc.js';
+import { ensureDirectory, ensureReadableDirectory } from '../lib/utils.js';
 
-if (program.from === program.to) {
-    console.error(chalk.bold.red(`Can't proceed with same format as origin and destination`));
-    process.exit(1);
-}
+const SUPPORTED_FROM = new Set(['watson', 'voc', 'ca', 'via']);
+const SUPPORTED_TO = new Set(['watson', 'voc', 'ca', 'mvi']);
 
-if (program.to === `mvi` && program.dataset.length === 0) {
-    console.error(chalk.bold.red(`You must provide a dataset name using parameter --dataset for MVI`));
-    process.exit(1);
-}
+const usage = `Usage: obj-annotations-converter --from watson --to voc --source . --target ./annotations
 
-let source = process.cwd();
-if (program.source) {
-    source = path.resolve(program.source);
-}
+Options:
+  --from <type>     Set annotation origin format [watson, voc, ca, via]
+  --to <type>       Set annotation destination format [watson, voc, ca, mvi]
+  --source <src>    origin directory
+  --target <dst>    target directory
+  --dataset <name>  dataset name (required only when converting to mvi)
+  -h, --help        display help for command
+  -V, --version     output the version number`;
 
-let target = process.cwd();
-if (!program.target && program.source) {
-    target = path.resolve(program.source);
-} else if (program.target) {
-    target = path.resolve(program.target);
-}
-
-try {
-    if (!fs.lstatSync(source).isDirectory()) {
-        console.error(chalk.bold.red(`Path source ${source} must be a directory`));
-        process.exit(1);
-    }
-} catch (error) {
-    console.error(chalk.bold.red(`Path source ${source} doesn't exists!`));
-    process.exit(1);
-}
-
-try {
-    if (!fs.lstatSync(target).isDirectory()) {
-        console.error(chalk.bold.red(`Path target ${target} must be a directory`));
-        process.exit(1);
-    }
-} catch (error) {
-    console.warn(chalk.yellowBright(`Path target ${target} doesn't exists, creating it...`));
-    fs.ensureDirSync(target);
-}
-
-const globOptions = {onlyFiles: true, deep: 0, absolute: true};
-const main = async (source, target, globOptions) => {
-    if (program.from === `watson` && program.to === `mvi`) {
-        await watsonToMVI(source, target, globOptions, program.dataset);
-    } else if (program.from === `voc` && program.to === `mvi`) {
-        await vocToMVI(source, target, globOptions, program.dataset);
-    } else if (program.from === `via` && program.to === `mvi`) {
-        await viaToMVI(source, target, globOptions, program.dataset);
-    } else if (program.from === `watson` && program.to === `voc`) {
-        await watsonToVoc(source, target, globOptions);
-    } else if (program.from === `voc` && program.to === `watson`) {
-        await vocToWatson(source, target, globOptions);
-    } else if (program.from === `ca` && program.to === `watson`) {
-        await caToWatson(source, target, globOptions);
-    } else if (program.from === `watson` && program.to === `ca`) {
-        await watsonToCa(source, target, globOptions);
-    } else {
-        throw new Error(`Can't convert from ${program.from} to ${program.to}: case not supported!`);
-    }
-};
-
-main(source, target, globOptions).then(() => {
-    console.log(chalk.bold.green(`Done!`));
-}).catch((error) => {
-    console.error(chalk.bold.red(error.message));
-    process.exit(1);
+const { values } = parseArgs({
+  allowPositionals: false,
+  options: {
+    dataset: { type: 'string' },
+    from: { default: 'watson', type: 'string' },
+    help: { short: 'h', type: 'boolean' },
+    source: { type: 'string' },
+    target: { type: 'string' },
+    to: { default: 'voc', type: 'string' },
+    version: { short: 'V', type: 'boolean' },
+  },
 });
+
+if (values.help) {
+  console.log(usage);
+  process.exit(0);
+}
+
+if (values.version) {
+  console.log('1.0.0');
+  process.exit(0);
+}
+
+if (!SUPPORTED_FROM.has(values.from)) {
+  console.error(`Unsupported origin format "${values.from}".`);
+  console.error(usage);
+  process.exit(1);
+}
+
+if (!SUPPORTED_TO.has(values.to)) {
+  console.error(`Unsupported destination format "${values.to}".`);
+  console.error(usage);
+  process.exit(1);
+}
+
+if (values.from === values.to) {
+  console.error(`Can't proceed with same format as origin and destination.`);
+  process.exit(1);
+}
+
+if (values.to === 'mvi' && !values.dataset?.trim()) {
+  console.error(`You must provide a dataset name using --dataset when converting to mvi.`);
+  process.exit(1);
+}
+
+const source = path.resolve(values.source ?? process.cwd());
+const target = path.resolve(values.target ?? values.source ?? process.cwd());
+
+try {
+  await ensureReadableDirectory(source);
+} catch {
+  console.error(`Path source ${source} must be an existing directory.`);
+  process.exit(1);
+}
+
+await ensureDirectory(target);
+
+const converters = new Map([
+  ['ca->watson', caToWatson],
+  ['via->mvi', viaToMvi],
+  ['voc->mvi', vocToMvi],
+  ['voc->watson', vocToWatson],
+  ['watson->ca', watsonToCa],
+  ['watson->mvi', watsonToMvi],
+  ['watson->voc', watsonToVoc],
+]);
+
+const converter = converters.get(`${values.from}->${values.to}`);
+if (!converter) {
+  console.error(`Can't convert from ${values.from} to ${values.to}: case not supported.`);
+  process.exit(1);
+}
+
+try {
+  await converter({
+    datasetName: values.dataset?.trim(),
+    source,
+    target,
+  });
+  console.log('Done!');
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}

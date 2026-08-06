@@ -1,87 +1,55 @@
-const path = require(`path`);
-const normalize = require('normalize-path');
-const fg = require(`fast-glob`);
-const fs = require(`fs-extra`);
-const chalk = require(`chalk`);
-const { v4: uuidv4 } = require(`uuid`);
-const {between} = require(`../helpers/helpers`);
+import path from 'node:path';
+import { randomUUID } from 'node:crypto';
+import {
+  clamp,
+  listFilesByExtension,
+  readJsonFile,
+  writeJsonFile,
+} from '../lib/utils.js';
 
-/**
- *
- * @param json
- * @returns {Promise<[]>}
- */
-const jsonToAnnotation = async (json) => {
-    const annotations = [];
-    for (const o of json.training_data.objects) {
-        annotations.push({
-            x: between(o.location.left / json.dimensions.width, 0, 1, false),
-            y: between(o.location.top / json.dimensions.height, 0, 1, false),
-            x2: between((o.location.left + o.location.width) / json.dimensions.width, 0, 1, false),
-            y2: between((o.location.top + o.location.height) / json.dimensions.height, 0, 1, false),
-            id: uuidv4(),
-            label: o.object,
-        });
-    }
-    return annotations;
-};
+function toCloudAnnotationObject(json) {
+  const filename = json.source.filename;
 
-/**
- *
- * @param source
- * @param target
- * @param options
- */
-module.exports = (source, target, options) => {
-    const entries = fg.sync(normalize(path.join(source, `*.json`)), options);
-    console.log(chalk.green(`Found ${entries.length} entries.`));
-    const ps = [];
-    for (const entry of entries) {
-        ps.push(fs.readFile(entry, {encoding: `utf8`}).then((data) => {
-            try {
-                return JSON.parse(data);
-            } catch (error) {
-                console.error(error);
-                console.error(chalk.red(`Can't convert file ${entry}. Skipping it.`));
-                return undefined;
-            }
-        }).then((json) => {
-            console.log(`Parsed file: ${entry}`);
-            return json;
-        }).catch((error) => {
-            console.error(error);
-            console.error(chalk.red(`Can't access file ${entry}. Skipping it.`));
-        }));
+  return {
+    [filename]: json.training_data.objects.map((object) => ({
+      id: randomUUID(),
+      label: object.object,
+      x: clamp(object.location.left / json.dimensions.width, 0, 1),
+      x2: clamp(
+        (object.location.left + object.location.width) / json.dimensions.width,
+        0,
+        1,
+      ),
+      y: clamp(object.location.top / json.dimensions.height, 0, 1),
+      y2: clamp(
+        (object.location.top + object.location.height) / json.dimensions.height,
+        0,
+        1,
+      ),
+    })),
+  };
+}
+
+export default async function watsonToCa({ source, target }) {
+  const entries = await listFilesByExtension(source, '.json');
+  const labels = new Set();
+  const annotations = {};
+
+  for (const entry of entries) {
+    const json = await readJsonFile(entry);
+    for (const object of json.training_data.objects) {
+      labels.add(object.object);
     }
 
-    Promise.all(ps).then((jsons) => {
-        const labels = [];
-        const annotations = {};
-        for (const json of jsons) {
-            if (json) {
-                const filename = json.source.filename;
-                for (const o of json.training_data.objects) {
-                    if (!labels.includes(o.object)) {
-                        labels.push(o.object);
-                    }
-                    annotations[filename] = jsonToAnnotation(json);
-                }
-            }
-        }
+    Object.assign(annotations, toCloudAnnotationObject(json));
+  }
 
-        return {
-            version: `1.0`,
-            type: `localization`,
-            labels,
-            annotations,
-        };
-    }).then((json) => {
-        const fileDst = path.join(target, `_annotations.json`);
-        return fs.writeFile(fileDst, JSON.stringify(json), `utf8`).then(() => {
-            console.log(`Cloud Annotations file generated at ${fileDst}`);
-        });
-    }).catch((error) => {
-        console.error(error);
-        console.error(chalk.red(`Can't create _annotations.json file.`));
-    });
-};
+  await writeJsonFile(path.join(target, '_annotations.json'), {
+    annotations,
+    labels: [...labels].sort(),
+    type: 'localization',
+    version: '1.0',
+  });
+
+  console.log(`Cloud Annotations file generated at ${path.join(target, '_annotations.json')}`);
+}

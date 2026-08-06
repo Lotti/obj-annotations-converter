@@ -1,102 +1,61 @@
-const path = require(`path`);
-const normalize = require('normalize-path');
-const fg = require(`fast-glob`);
-const fs = require(`fs-extra`);
-const chalk = require(`chalk`);
-const imageSize = require(`image-size`);
-const {between} = require(`../helpers/helpers`);
+import path from 'node:path';
+import {
+  clamp,
+  fileStem,
+  getImageDimensions,
+  listFilesByExtension,
+  readJsonFile,
+  writeTextFile,
+} from '../lib/utils.js';
 
-/**
- *
- * @param file
- * @param fileName
- * @param annotations
- * @param entry
- * @returns {Promise<string>}
- */
-const annotationToJson = async (file, fileName, annotations, entry) => {
-    const filePath = path.join(path.dirname(entry), file);
+export default async function caToWatson({ source, target }) {
+  const entries = await listFilesByExtension(source, '.json');
 
-    try {
-        const size = await imageSize(filePath);
-        const json = {
-            updated: new Date().toISOString(),
-            dimensions: {
-                width: size.width,
-                height: size.height,
-            },
-            source: {
-                type: `file`,
-                filename: file,
-            },
-            created: new Date().toISOString(),
-            image_id: fileName,
-            training_data: {
-                objects: annotations.map((o) => {
-                    return {
-                        object: o.label,
-                        location: {
-                            left: between(o.x * size.width, 0, size.width, true),
-                            top: between(o.y * size.height, 0, size.height, true),
-                            width: between(o.x2 * size.width - o.x * size.width, 0, size.width, true),
-                            height: between(o.y2 * size.height - o.y * size.height, 0, size.height, true),
-                        }
-                    };
-                })
-            }
-        };
-        return JSON.stringify(json, null, 4);
-    } catch (error) {
-        throw new Error(`Can't open file ${filePath}.`);
+  for (const entry of entries) {
+    const json = await readJsonFile(entry);
+    if (!json.annotations) {
+      console.error(`Can't find field "annotations" in file ${entry}`);
+      continue;
     }
-};
 
-/**
- *
- * @param source
- * @param target
- * @param options
- */
-module.exports = (source, target, options) => {
-    const entries = fg.sync(normalize(path.join(source, `*.json`)), options);
-    console.log(chalk.green(`Found ${entries.length} entries.`));
-    for (const entry of entries) {
-        fs.readFile(entry, {encoding: `utf8`}, async (err, data) => {
-            if (err) {
-                console.error(chalk.red(`Can't access file ${entry}. Skipping it.`));
-            } else {
-                try {
-                    const jsonObj = JSON.parse(data);
-                    if (!jsonObj.annotations) {
-                        console.error(`Can't find field "annotations" in file ${entry}`);
-                    } else {
-                        const keys = Object.keys(jsonObj.annotations);
-                        for (const k of keys) {
-                            const file = k;
-                            const annotations = jsonObj.annotations[k];
+    for (const [filename, annotations] of Object.entries(json.annotations)) {
+      const dimensions = await getImageDimensions(path.join(source, filename));
+      const imageId = fileStem(filename);
+      const watsonPayload = {
+        created: new Date().toISOString(),
+        dimensions,
+        image_id: imageId,
+        source: {
+          filename,
+          type: 'file',
+        },
+        training_data: {
+          objects: annotations.map((annotation) => ({
+            location: {
+              height: clamp(
+                annotation.y2 * dimensions.height - annotation.y * dimensions.height,
+                0,
+                dimensions.height,
+                true,
+              ),
+              left: clamp(annotation.x * dimensions.width, 0, dimensions.width, true),
+              top: clamp(annotation.y * dimensions.height, 0, dimensions.height, true),
+              width: clamp(
+                annotation.x2 * dimensions.width - annotation.x * dimensions.width,
+                0,
+                dimensions.width,
+                true,
+              ),
+            },
+            object: annotation.label,
+          })),
+        },
+        updated: new Date().toISOString(),
+      };
 
-                            try {
-                                const fileName = path.basename(file, path.extname(file));
-                                const jsonString = annotationToJson(file, fileName, annotations, entry);
-                                const fileDst = path.join(target, `${fileName}.json`);
-                                fs.writeFile(fileDst, jsonString, {encoding: `utf8`}, (err) => {
-                                    if (err) {
-                                        console.error(chalk.red(`Can't write file ${fileDst}. Skipping it.`));
-                                    } else {
-                                        console.log(`${fileDst} generated`);
-                                    }
-                                });
-                            } catch (error) {
-                                console.error(error);
-                                console.error(chalk.red(`Can't write converted annotation for ${entry}. Skipping it.`));
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error(error);
-                    console.error(chalk.red(`Can't convert file ${entry}. Skipping it.`));
-                }
-            }
-        });
+      const destination = path.join(target, `${imageId}.json`);
+      await writeTextFile(destination, `${JSON.stringify(watsonPayload, null, 2)}\n`);
+      console.log(`${destination} generated`);
     }
-};
+  }
+}
