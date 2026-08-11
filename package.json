@@ -23,6 +23,6 @@
   },
   "dependencies": {
     "fast-xml-parser": "5.10.1",
-    "image-size": "2.0.2"
+    "sharp": "0.35.3"
   }
 }
